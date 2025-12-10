@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Core\SkyCore.Abstractions\SkyCore.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\Core\SkyCore.Common\SkyCore.Common.csproj" />
+    <ProjectReference Include="..\..\..\Core\SkyCore.Engines\SkyCore.Engines.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>
