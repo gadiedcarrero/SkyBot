@@ -1,0 +1,119 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: skybot-postgres
+    environment:
+      POSTGRES_DB: skybot
+      POSTGRES_USER: skybot
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U skybot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis (optional - for caching/session)
+  redis:
+    image: redis:7-alpine
+    container_name: skybot-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # SkyCoreAtlas Bot Instance #1
+  atlas-001:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: skybot-atlas-001
+    environment:
+      - CTRADER_CLIENT_ID=${CTRADER_CLIENT_ID}
+      - CTRADER_SECRET=${CTRADER_SECRET}
+      - CTRADER_ACCOUNT_ID=${CTRADER_ACCOUNT_ID_1}
+      - BOT_NAME=SkyCoreAtlas-001
+      - LOG_LEVEL=Information
+      - DB_CONNECTION_STRING=Host=postgres;Database=skybot;Username=skybot;Password=${DB_PASSWORD:-changeme}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # SkyCoreAtlas Bot Instance #2
+  atlas-002:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: skybot-atlas-002
+    environment:
+      - CTRADER_CLIENT_ID=${CTRADER_CLIENT_ID}
+      - CTRADER_SECRET=${CTRADER_SECRET}
+      - CTRADER_ACCOUNT_ID=${CTRADER_ACCOUNT_ID_2}
+      - BOT_NAME=SkyCoreAtlas-002
+      - LOG_LEVEL=Information
+      - DB_CONNECTION_STRING=Host=postgres;Database=skybot;Username=skybot;Password=${DB_PASSWORD:-changeme}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Telemetry Worker (placeholder - implement separately)
+  # telemetry-worker:
+  #   image: skybot-telemetry:latest
+  #   container_name: skybot-telemetry
+  #   environment:
+  #     - DB_CONNECTION_STRING=Host=postgres;Database=skybot;Username=skybot;Password=${DB_PASSWORD:-changeme}
+  #     - REDIS_URL=redis://redis:6379
+  #   depends_on:
+  #     - postgres
+  #     - redis
+  #   restart: unless-stopped
+
+  # Backend API (placeholder - implement separately)
+  # backend-api:
+  #   image: skybot-api:latest
+  #   container_name: skybot-api
+  #   environment:
+  #     - DB_CONNECTION_STRING=Host=postgres;Database=skybot;Username=skybot;Password=${DB_PASSWORD:-changeme}
+  #     - REDIS_URL=redis://redis:6379
+  #     - JWT_SECRET=${JWT_SECRET}
+  #   ports:
+  #     - "3000:3000"
+  #   depends_on:
+  #     - postgres
+  #     - redis
+  #   restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  default:
+    name: skybot-network
